@@ -10,9 +10,9 @@ module.exports = {
         .catch(o => sendOutput(o,res))
     },
     LoginAccount: (req,res) => {
-        const output = UserServices.LoginAccount(req.body)
-        res
-        .status(output.statusCode)
-        .json(output)
+        UserServices
+        .LoginAccount(req.body)
+        .then(o => sendOutput(o,res))
+        .catch(o => sendOutput(o,res))
     }
 }

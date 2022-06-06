@@ -1,9 +1,11 @@
+//#region imports
 const res = require('express/lib/response');
 const {GenericHelpers: {FieldNullOrEmpty, FieldsNullOrEmpty}}  = require('../helpers')
 const {
     Inputs: {User: {UserRegisterDTO, UserLoginDTO}}
-    ,Outputs: {User: {RegisteredUser}}
+    ,Outputs: {User: {RegisteredUser, LoggedUser}}
     ,Domain: {User}} = require('../models')
+//#endregion imports
 
 //#region passwordMethods
 const checkPasswordNotNull = (password, output) => FieldNullOrEmpty(password,output);
@@ -25,7 +27,30 @@ const checkPasswordLength = (password, output) => {
     }
     return true
 };
+//#endregion
 
+//#region User
+const findUserByEmail = (input, output) => new Promise((resolve, reject) => {
+
+    FieldsNullOrEmpty(input, output)
+
+    if(output.statusCode !== 422 && output.statusCode > 0){
+        User.findOne({email: input.email, isActive: true}).exec()
+        .then(u => {
+            if(u !== null){
+                output.statusCode = 200
+                output.data = u
+                resolve(output)
+            }else{
+                output.statusCode = 404
+                output.messages = [...output.messages, "user not found."]
+                reject(output)
+            }
+        })
+    }else{
+        reject(output)
+    }
+})
 //#endregion
 
 module.exports = {
@@ -59,9 +84,9 @@ module.exports = {
             reject(output)
         }
     }),
-    LoginAccount: (userLoginDTO) => {
+    LoginAccount: (userLoginDTO) =>{
         const input = Object.assign(new UserLoginDTO(), userLoginDTO)
-
-        console.log(input)
+        const output = new LoggedUser(input)
+        return findUserByEmail(input,output)
     }
 }
