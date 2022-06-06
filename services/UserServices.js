@@ -1,14 +1,17 @@
 //#region imports
+const { reject } = require('bcrypt/promises');
 const res = require('express/lib/response');
-const {GenericHelpers: {FieldNullOrEmpty, FieldsNullOrEmpty}}  = require('../helpers')
+const {GenericHelpers, PasswordHelper}  = require('../helpers')
 const {
     Inputs: {User: {UserRegisterDTO, UserLoginDTO}}
     ,Outputs: {User: {RegisteredUser, LoggedUser}}
     ,Domain: {User}} = require('../models')
+
+   
 //#endregion imports
 
 //#region passwordMethods
-const checkPasswordNotNull = (password, output) => FieldNullOrEmpty(password,output);
+const checkPasswordNotNull = (password, output) => GenericHelpers.FieldNullOrEmpty(password,output);
 
 const checkPasswordEquals = (password, repassword, output) => {
     if(password !== repassword){
@@ -32,15 +35,14 @@ const checkPasswordLength = (password, output) => {
 //#region User
 const findUserByEmail = (input, output) => new Promise((resolve, reject) => {
 
-    FieldsNullOrEmpty(input, output)
+    GenericHelpers.FieldsNullOrEmpty(input, output)
 
     if(output.statusCode !== 422 && output.statusCode > 0){
         User.findOne({email: input.email, isActive: true}).exec()
         .then(u => {
             if(u !== null){
                 output.statusCode = 200
-                output.data = u
-                resolve(output)
+                resolve(u)
             }else{
                 output.statusCode = 404
                 output.messages = [...output.messages, "user not found."]
@@ -58,7 +60,7 @@ module.exports = {
         let input = Object.assign(new UserRegisterDTO(), userRegisterDTO)
         let output = new RegisteredUser(input)
 
-        FieldsNullOrEmpty(input, output)
+        GenericHelpers.FieldsNullOrEmpty(input, output)
 
         if(output.statusCode !== 422 && output.statusCode > 0){
             if(checkPasswordEquals(input.password, input.repassword, output) && checkPasswordLength(input.password, output)){
@@ -72,10 +74,15 @@ module.exports = {
                         output.messages = [...output.messages, `account by email ${output?.data?.email} already taken.`]
                         reject(output)
                     }else{
-                        User.create(input)
-                        output.statusCode = 201
-                        output.messages = [...output.messages, `Welcome ${ output?.data?.email}.`]
-                        resolve(output)
+                        
+                        PasswordHelper.EncryptPassword(input.password)
+                        .then(p => {
+                            input.password = p
+                            User.create(input)
+                            output.statusCode = 201
+                            output.messages = [...output.messages, `Welcome ${ output?.data?.email}.`]
+                            resolve(output)
+                        })
                     }
                 })
 
@@ -84,9 +91,31 @@ module.exports = {
             reject(output)
         }
     }),
-    LoginAccount: (userLoginDTO) =>{
+    LoginAccount: (userLoginDTO) => new Promise((resolve, reject) => {
         const input = Object.assign(new UserLoginDTO(), userLoginDTO)
         const output = new LoggedUser(input)
-        return findUserByEmail(input,output)
-    }
+        findUserByEmail(input,output)
+        .then(userData => {
+            PasswordHelper.VerifyPassword(input.password,userData.password)
+            .then(isCorrect => {
+                if(isCorrect)
+                {
+                    output.data = {
+                        email: userData.email,
+                        name: userData.name,
+                        lastName: userData.lastName,
+                        token: 'Bearer'
+                    }
+                    output.statusCode = 200
+                    output.messages = [...output.messages, `Welcome ${output.data.name} ${output.data.lastName}.`]
+                    resolve(output)
+                }else{
+                    output.statusCode = 403
+                    output.messages = [...output.messages, 'password incorrect.']
+                    reject(output)
+                }
+            })
+        })
+
+    })
 }

@@ -1,3 +1,4 @@
 module.exports = {
-    GenericHelpers: require('./GenericHelper.js')
+    GenericHelpers: require('./GenericHelper.js'),
+    PasswordHelper: require('./PasswordHelper.js')
 }
