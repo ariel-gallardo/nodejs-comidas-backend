@@ -1,13 +1,12 @@
 //#region imports
 const { reject } = require('bcrypt/promises');
 const res = require('express/lib/response');
-const {GenericHelpers, PasswordHelper}  = require('../helpers')
+const {GenericHelpers, PasswordHelper}  = require('../helpers');
 const {
     Inputs: {User: {UserRegisterDTO, UserLoginDTO}}
     ,Outputs: {User: {RegisteredUser, LoggedUser}}
     ,Domain: {User}} = require('../models')
 
-   
 //#endregion imports
 
 //#region passwordMethods
@@ -101,10 +100,11 @@ module.exports = {
                 if(isCorrect)
                 {
                     output.data = {
-                        email: userData.email,
-                        name: userData.name,
-                        lastName: userData.lastName,
-                        token: 'Bearer'
+                        token: PasswordHelper.GenerateToken({
+                            email: userData.email,
+                            name: userData.name,
+                            lastName: userData.lastName
+                        })
                     }
                     output.statusCode = 200
                     output.messages = [...output.messages, `Welcome ${output.data.name} ${output.data.lastName}.`]
@@ -116,6 +116,8 @@ module.exports = {
                 }
             })
         })
-
+    }),
+    ViewProfile: (req, res) => new Promise((resolve, reject)=>{
+        resolve(res.locals.user)
     })
 }
