@@ -5,7 +5,8 @@ const {GenericHelpers, PasswordHelper}  = require('../helpers');
 const {
     Inputs: {User: {UserRegisterDTO, UserLoginDTO}}
     ,Outputs: {User: {RegisteredUser, LoggedUser}}
-    ,Domain: {User}} = require('../models')
+    ,Domain: {User}} = require('../models');
+const Output = require('../models/outputs/Output');
 
 //#endregion imports
 
@@ -107,7 +108,7 @@ module.exports = {
                         })
                     }
                     output.statusCode = 200
-                    output.messages = [...output.messages, `Welcome ${output.data.name} ${output.data.lastName}.`]
+                    output.messages = [...output.messages, `Welcome ${userData.name} ${userData.lastName}.`]
                     resolve(output)
                 }else{
                     output.statusCode = 403
@@ -118,6 +119,8 @@ module.exports = {
         })
     }),
     ViewProfile: (req, res) => new Promise((resolve, reject)=>{
-        resolve(res.locals.user)
+        const output = new LoggedUser(res.locals.user);
+        output.statusCode = 200;
+        resolve(output)
     })
 }

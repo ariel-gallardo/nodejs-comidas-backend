@@ -5,7 +5,6 @@ class LoggedUser{
         this.name = data?.name
         this.lastName = data?.lastName
         this.email = data?.email
-        this.token = 'Bearer'
     }
 }
 

@@ -1,6 +1,6 @@
 const {UserServices} = require('../services')
 
-const sendOutput = (o,res) => {res.status(200).json(o)}
+const sendOutput = (o,res) => {res.status(o.statusCode).json(o)}
 
 module.exports = {
     RegisterAccount: (req, res) => 
