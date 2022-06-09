@@ -3,11 +3,12 @@ const {JWT_TOKEN} = require('dotenv').config().parsed
 
 module.exports = (req, res, next) => {
 
-    const token = req.header('authorization').replace("Bearer ","")
+    let token = req.header('authorization')
     
     if(!token){
         res.status(401).json({error: 'Acceso Denegado'})
     }else{
+        token = token.replace("Bearer ","")
         try{
             if(jwt.verify(token,JWT_TOKEN))
             {
